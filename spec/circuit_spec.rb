@@ -39,6 +39,21 @@ RSpec.describe Circuit do
         expect{circuit.pass(:bar)}.to raise_error(BarError)
       end
 
+      context 'testing circuit via logger' do
+        let(:logger){ double(:logger, warn: true) }
+        let(:circuit){ Circuit.new(payload: foo, max_failures: 1, logger: logger) }
+
+        it 'does not break again' do
+          expect{circuit.pass(:bar)}.to raise_error(BarError)
+          expect(logger).to receive(:warn) do |message|
+            expect(message).to include('broken')
+          end
+          expect{circuit.pass(:bar)}.to raise_error(BarError)
+          expect(logger).not_to receive(:warn)
+          expect{circuit.pass(:bar)}.to raise_error(BarError)
+        end
+      end
+
       context 'when the next call is successful again' do
         let(:foo) do
           Class.new do
