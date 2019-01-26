@@ -1,3 +1,6 @@
+[![gem version](https://img.shields.io/gem/v/simple_circuit.svg?style=flat-square)](https://rubygems.org/gems/simple_circuit)
+[![build status](https://img.shields.io/travis/vassilevsky/simple_circuit.svg?style=flat-square)](https://travis-ci.org/vassilevsky/simple_circuit)
+
 # SimpleCircuit
 
 A simple implementation of [Circuit Breaker](https://en.wikipedia.org/wiki/Circuit_breaker_design_pattern) pattern.
