@@ -1,8 +1,8 @@
 require "spec_helper"
 
-RSpec.describe Circuit do
+RSpec.describe SimpleCircuit do
   it "has a version number" do
-    expect(Circuit::VERSION).not_to be nil
+    expect(SimpleCircuit::VERSION).not_to be nil
   end
 
   context 'happy path' do
@@ -10,7 +10,7 @@ RSpec.describe Circuit do
 
     it 'passes through a message and returns the result' do
       expect(foo).to receive(:bar).with(:baz).and_call_original
-      expect(Circuit.new(payload: foo).pass(:bar, :baz)).to eq(:baz)
+      expect(SimpleCircuit.new(payload: foo).pass(:bar, :baz)).to eq(:baz)
     end
   end
 
@@ -18,14 +18,14 @@ RSpec.describe Circuit do
     class BarError < RuntimeError; end
 
     let(:foo){ Class.new{ def bar; fail BarError; end }.new }
-    let(:circuit){ Circuit.new(payload: foo) }
+    let(:circuit){ SimpleCircuit.new(payload: foo) }
 
     it 'counts the error and lets it raise' do
       expect{circuit.pass(:bar)}.to raise_error(BarError)
     end
 
     context 'when circuit has too many errors' do
-      let(:circuit){ Circuit.new(payload: foo, max_failures: 1) }
+      let(:circuit){ SimpleCircuit.new(payload: foo, max_failures: 1) }
 
       it 'breaks the circuit - does not call the payload anymore, fails immediately' do
         expect(circuit).to be_closed
@@ -41,7 +41,7 @@ RSpec.describe Circuit do
 
       context 'testing circuit via logger' do
         let(:logger){ double(:logger, warn: true) }
-        let(:circuit){ Circuit.new(payload: foo, max_failures: 1, logger: logger) }
+        let(:circuit){ SimpleCircuit.new(payload: foo, max_failures: 1, logger: logger) }
 
         it 'does not break again' do
           expect{circuit.pass(:bar)}.to raise_error(BarError)
@@ -73,7 +73,7 @@ RSpec.describe Circuit do
           end.new
         end
 
-        let(:circuit){ Circuit.new(payload: foo, max_failures: 1, retry_in: 1) }
+        let(:circuit){ SimpleCircuit.new(payload: foo, max_failures: 1, retry_in: 1) }
 
         it 'closes back the circuit' do
           expect{circuit.pass(:bar)}.to raise_error(BarError)
@@ -102,7 +102,7 @@ RSpec.describe Circuit do
           end.new
         end
 
-        let(:circuit){ Circuit.new(payload: foo, max_failures: 1) }
+        let(:circuit){ SimpleCircuit.new(payload: foo, max_failures: 1) }
 
         it 'fails with top error after break' do
           expect{circuit.pass(:bar)}.to raise_error(Error1)

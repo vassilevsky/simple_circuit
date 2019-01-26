@@ -1,4 +1,4 @@
-# Circuit
+# SimpleCircuit
 
 A simple implementation of [Circuit Breaker](https://en.wikipedia.org/wiki/Circuit_breaker_design_pattern) pattern.
 
@@ -9,7 +9,7 @@ Use it when you make calls to an unreliable service. It will not make the servic
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'circuit' # Circuit breaker to fail fast on external service outages
+gem 'simple_circuit' # Circuit breaker to fail fast on external service outages
 ```
 
 And then execute:
@@ -18,7 +18,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install circuit
+    $ gem install simple_circuit
 
 ## Usage
 
@@ -35,7 +35,7 @@ If you'd rather have the calls fail fast, and handle failures fast, use it throu
 
 ```ruby
 client = UnreliableServiceClient.new(url: "https://api.example.io")
-circuit = Circuit.new(payload: client)
+circuit = SimpleCircuit.new(payload: client)
 circuit.pass(:get_some_info) # => "foo bar"
 ```
 
@@ -68,7 +68,7 @@ When it succeeds, it will become closed again and will rely _all_ messages to th
 You can customize several parameters of circuits. The defaults are show below:
 
 ```ruby
-circuit = Circuit.new(payload: client, max_failures: 100, retry_in: 60, logger: nil)
+circuit = SimpleCircuit.new(payload: client, max_failures: 100, retry_in: 60, logger: nil)
 ```
 
 The parameters are:

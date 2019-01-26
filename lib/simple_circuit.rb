@@ -1,4 +1,4 @@
-class Circuit
+class SimpleCircuit
   VERSION = "0.1.0"
 
   def initialize(payload:, max_failures: 100, retry_in: 60, logger: nil)

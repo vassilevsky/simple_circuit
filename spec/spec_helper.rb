@@ -1,5 +1,5 @@
 require "bundler/setup"
-require "circuit"
+require "simple_circuit"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
