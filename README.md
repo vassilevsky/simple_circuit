@@ -29,7 +29,7 @@ client = UnreliableServiceClient.new(url: "https://api.example.io")
 client.get_some_info # => "foo bar"
 ```
 
-When they go down or unresponsive, your app starts to slow down too. Queues filling up, etc.
+When they go down or become unresponsive, your app starts to slow down too. Queues filling up, etc.
 
 If you'd rather have the calls fail fast, and handle failures fast, use it through a circuit:
 
@@ -37,10 +37,15 @@ If you'd rather have the calls fail fast, and handle failures fast, use it throu
 client = UnreliableServiceClient.new(url: "https://api.example.io")
 circuit = SimpleCircuit.new(payload: client)
 circuit.pass(:get_some_info) # => "foo bar"
+circuit.pass(:get_other_info, arg1, arg2) # => "baz qux"
 ```
 
-You're passing the same message (`get_some_info`) to `client` object, but now it goes through a circuit.
-It works exactly the same while the circuit is closed (there are no problems in the payload).
+You're passing the same message (`get_some_info`) to `client` object, but now it goes through a _circuit_.
+It works exactly the same while the circuit is _closed_ (there are no problems in the payload).
+
+```ruby
+circuit.closed? # => true
+```
 
 Interesting things begin when `client` starts throwing errors.
 
@@ -53,6 +58,12 @@ circuit.pass(:get_some_info) # => HTTP::TimeoutError
 This is still slow because it's the `client` object still working as usual.
 
 But after 100 errors, the circuit **breaks**.
+
+```ruby
+circuit.closed? # => false
+circuit.open?   # => true
+```
+
 The payload is disconnected from the circuit.
 It no longer receives the `get_some_info` message.
 Instead, the circuit itself immediately throws the error.
@@ -61,11 +72,20 @@ This will prevent overload in your app while the service is down.
 This will also reduce the load on the service and hopefully allow it to recover faster.
 
 The circuit will keep trying to connect the payload back and send the message through it, at regular intervals (by default, every minute).
-When it succeeds, it will become closed again and will rely _all_ messages to the payload, just like in the beginning.
+When it succeeds, it will become _closed_ again and will rely all messages to the payload, just like in the beginning.
+
+### Error Counting
+
+The circuit counts exceptions coming from the payload **by class** and breaks only if **a particular class** of exceptions is received too many times.
+Therefore, it fails fast with the most occurred exception.
+
+For example, if the payload occasionally throws `MultiJson::ParseError` and then starts throwing `HTTP::TimeoutError` on a regular basis, then the counter of `HTTP::TimeoutError` will reach the maximum first, and the circuit will fast-throw `HTTP::TimeoutError` after breaking.
+
+It might be non-ideal. I welcome suggestions via issues or pull requests.
 
 ### Customization
 
-You can customize several parameters of circuits. The defaults are show below:
+You can customize several parameters of circuits. These are the defaults:
 
 ```ruby
 circuit = SimpleCircuit.new(payload: client, max_failures: 100, retry_in: 60, logger: nil)
@@ -73,18 +93,9 @@ circuit = SimpleCircuit.new(payload: client, max_failures: 100, retry_in: 60, lo
 
 The parameters are:
 
-* `max_failures` — How many exceptions from the payload should be ignored (returned as is) before the circuit breaks and starts to fail fast.
-* `retry_in` — How many seconds should pass before every retry to connect the payload (to send the original message) when the circuit is open (broken).
+* `max_failures` — How many exceptions from the payload should be ignored (returned as is) before the circuit _breaks_ and starts to _fail fast_.
+* `retry_in` — How many seconds should pass before every retry to connect the payload (to send the original message) when the circuit is _open_ (broken).
 * `logger` — An object that responds to `warn(message)`. It will be called each time the circuit is broken.
-
-### Error Counting
-
-The circuit counts exceptions coming from the payload **by class** and breaks only if **a particular class** of exceptions is received too many times.
-It fails fast with the most occurred exception.
-
-For example, if the payload occasionally throws `MultiJson::ParseError` and then starts throwing `HTTP::TimeoutError` on a regular basis, then the counter of `HTTP::TimeoutError` will reach the maximum first, and the circuit will fast-throw `HTTP::TimeoutError` after breaking.
-
-It might be non-ideal. I welcome suggestions via issues or pull requests.
 
 ## Development
 
@@ -94,7 +105,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/vassilevsky/circuit.
+Bug reports and pull requests are welcome on GitHub at https://github.com/vassilevsky/circuit
 
 ## License
 
